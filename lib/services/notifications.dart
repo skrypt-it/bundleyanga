@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:background_fetch/background_fetch.dart';
 import 'package:bundle_yanga/logger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,9 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 class NotificationService {
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  bool initialized = false;
   init() {
     var initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
+        new AndroidInitializationSettings('@mipmap/ic_launcher');
     var initializationSettingsIOS = IOSInitializationSettings(
         onDidReceiveLocalNotification: onDidReceiveLocalNotification);
     var initializationSettings = InitializationSettings(
@@ -36,21 +36,24 @@ class NotificationService {
   }
 
   initBackgroundNotifications(Function fetch) {
-    print(
-        "Next bg task at ${DateTime.now().add(Duration(minutes: getInterval())).toIso8601String()}");
-    BackgroundFetch.configure(
-            BackgroundFetchConfig(
-                minimumFetchInterval: getInterval(),
-                stopOnTerminate: false,
-                startOnBoot: true,
-                enableHeadless: true,
-                requiredNetworkType: NetworkType.ANY),
-            fetch)
-        .catchError((e) {
-      print('[BG] configure ERROR: $e');
-      Get.find<Logger>()
-          .error('Background Task setup failed', {"error": e.toString()});
-    });
+    if (!initialized) {
+      print(
+          "Next bg task at ${DateTime.now().add(Duration(minutes: getInterval())).toIso8601String()}");
+      BackgroundFetch.configure(
+              BackgroundFetchConfig(
+                  minimumFetchInterval: getInterval(),
+                  stopOnTerminate: false,
+                  startOnBoot: true,
+                  enableHeadless: true,
+                  requiredNetworkType: NetworkType.ANY),
+              fetch)
+          .catchError((e) {
+        print('[BG] configure ERROR: $e');
+        Get.find<Logger>()
+            .error('Background Task setup failed', {"error": e.toString()});
+      });
+      initialized = true;
+    }
   }
 
   Future<void> onSelectNotification(String payload) async {}

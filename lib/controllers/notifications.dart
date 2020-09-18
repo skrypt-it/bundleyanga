@@ -15,12 +15,17 @@ class NotificationsController extends GetxController {
 
   NotificationsController(this.notificationService);
 
+  @override
+  void onInit() {
+    initialize();
+    super.onInit();
+  }
+
   void initialize() {
-    print('init notifications');
     if (!this.initialized) {
-      print('initing bg');
       checkStatus();
       if (status.value) {
+        notificationService.init();
         notificationService.initBackgroundNotifications(onBackgroundFetch);
       }
     }
@@ -29,6 +34,8 @@ class NotificationsController extends GetxController {
   toggle() {
     Logger logger = Get.find();
     if (!status.value) {
+      if (!notificationService.initialized)
+        notificationService.initBackgroundNotifications(onBackgroundFetch);
       notificationService
           .toggleNotifications(true)
           .then((value) => Get.snackbar(
@@ -60,30 +67,25 @@ class NotificationsController extends GetxController {
     await Get.find<BundlesController>().checkYanga(active: false).then((info) {
       Get.find<Logger>().event(
           'Background Task:Active', {"percentage": info.percent.toString()});
-      print("${info.percent} found from $minPercent");
-      if (info.percent >= minPercent) {
-        notify();
-      }
+      if (info.percent >= minPercent) notify();
       BackgroundFetch.finish(taskId);
     }).catchError((e) => BackgroundFetch.finish(taskId));
   }
 
   void notify() async {
-    await notificationService.cancelAllNotifications();
     Random rnd = new Random();
     Bundles bundles = await Get.find<BundlesController>().bundles.value;
     Bundle bundle = bundles.list[rnd.nextInt(bundles.list.where((bundle) {
-      return bundle.percent == bundles.percent;
+      return bundle.data && bundle.percent == bundles.percent;
     }).length)];
-    print("notifying");
     notificationService.showNotification(
         "${bundle.percent}% Discount",
-        "Buy a dynamic bundles now at ${bundle.percent}%: ${bundle.price}",
+        "Buy a dynamic bundles now at ${bundle.percent}%: K${bundle.price}",
         bundles.list.map((b) => b.toMap()).toList());
   }
 
   scheduleNotification(String title, String body, int minutes) {
-    var time = DateTime.now().add(Duration(minutes: minutes));
+    var time = DateTime.now().add(Duration(minutes: minutes - 15));
     notificationService.scheduleReminder(title, body, time);
   }
 }
