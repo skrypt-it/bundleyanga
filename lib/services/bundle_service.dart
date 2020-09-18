@@ -63,10 +63,6 @@ class BundleService with Handler {
             ['accountBalanceList'][0]['displayBalance'];
         List<ActiveBundle> activeBundles =
             bundleList.map((b) => ActiveBundle.fromMap(b)).toList();
-        logger.event('Bundle purchase successful', {
-          "percent": bundle.percent.toString(),
-          "bundle": bundle.size.toString()
-        });
         return Balance(amount: balance, bundles: activeBundles);
       }
     });
