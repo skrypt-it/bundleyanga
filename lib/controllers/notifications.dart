@@ -11,9 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationsController extends GetxController {
   final status = RxBool(true);
+  final bool bg;
   final NotificationService notificationService;
 
-  NotificationsController(this.notificationService);
+  NotificationsController(this.notificationService, {this.bg = false});
 
   @override
   void onInit() {
@@ -26,7 +27,8 @@ class NotificationsController extends GetxController {
       checkStatus();
       if (status.value) {
         notificationService.init();
-        notificationService.initBackgroundNotifications(onBackgroundFetch);
+        if (!bg)
+          notificationService.initBackgroundNotifications(onBackgroundFetch);
       }
     }
   }

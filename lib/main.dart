@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:bundle_yanga/controllers/auth_controller.dart';
+import 'package:bundle_yanga/controllers/bundles.dart';
 import 'package:bundle_yanga/services/auth_service.dart';
+import 'package:bundle_yanga/services/bundle_service.dart';
+import 'package:bundle_yanga/services/notifications.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:background_fetch/background_fetch.dart';
@@ -14,21 +17,26 @@ FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
 void backgroundFetchHeadlessTask(String taskId) async {
   print('[BGX] Event received');
+  HttpOverrides.global = new MyHttpOverrides();
   SharedPreferences prefs = await Get.putAsync<SharedPreferences>(() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs;
   });
-  Get.putAsync(() async => await Logger.init());
-  String token = prefs.getString('token');
+  final logger = await Get.putAsync(() async => await Logger.init());
+  final auth = await Get.putAsync<AuthController>(() async {
+    final authController = AuthController(authService: AuthService());
+    await authController.initialize();
+    return authController;
+  });
   bool notifyMe = prefs.getBool('notifyMe') ?? true;
-  print("notify me: *********** $notifyMe");
-  if (notifyMe && token != null) {
-    AppBinding().dependencies();
-    final NotificationsController notty = Get.find();
-    print('trying');
+  if (notifyMe && auth.isLoggedIn != null) {
+    final notty =
+        Get.put(NotificationsController(NotificationService(), bg: true));
+    notty.initialize();
+    String token = auth.token.value;
+    String phone = auth.phone.value;
+    Get.lazyPut(() => BundlesController(BundleService(phone, token, logger)));
     notty.onBackgroundFetch(taskId);
-  } else {
-    print('quiting');
   }
   BackgroundFetch.finish(taskId);
 }
